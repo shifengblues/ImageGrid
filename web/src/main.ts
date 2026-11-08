@@ -3,6 +3,7 @@ import {layout,placement,equalCuts,regions,integer,moveItem} from './geometry.ts
 import type {Grid,Placement,Size} from './geometry.ts';
 import type {Job,Result} from './protocol.ts';
 import {pickColor} from './color.ts';
+import {PreviewCache,loadPreview} from './preview.ts';
 
 const $=<T extends HTMLElement=HTMLElement>(id:string)=>document.getElementById(id) as T;
 type Entry=Size&{file:File;thumbnail:string};
@@ -35,6 +36,30 @@ let grid:Grid|null=null,validation='',zoom=1,panX=0,panY=0,scale=1,replaceIndex=
 let activeWorker:Worker|null=null,cancelReject:((error:Error)=>void)|null=null;
 let activeFallback:AbortController|null=null;
 const viewport=$('viewport'),board=$('board'),fileInput=$<HTMLInputElement>('files'),directoryInput=$<HTMLInputElement>('directory');
+const previews=new PreviewCache(loadPreview,applyPreviews);
+let previewTimer:ReturnType<typeof setTimeout>|null=null;
+function applyPreviews(){
+  board.querySelectorAll<HTMLImageElement>('img[data-preview]').forEach(img=>{
+    const entry=page==='split'?source:entries[Number(img.dataset.preview)];
+    const item=entry?previews.get(entry.file):undefined;
+    if(entry){const url=item?.url??entry.thumbnail;if(img.src!==url)img.src=url;img.dataset.previewEdge=String(item?.edge??640);}
+  });
+}
+function schedulePreviews(){
+  if(previewTimer)clearTimeout(previewTimer);
+  previewTimer=setTimeout(()=>{
+    if(busy||board.hidden)return;
+    const view=viewport.getBoundingClientRect(),requests:import('./preview.ts').PreviewRequest[]=[];
+    board.querySelectorAll<HTMLImageElement>('img[data-preview]').forEach(img=>{
+      const entry=page==='split'?source:entries[Number(img.dataset.preview)];if(!entry)return;
+      const rect=(page==='compose'?img.parentElement!:img).getBoundingClientRect();
+      if(rect.right<view.left||rect.left>view.right||rect.bottom<view.top||rect.top>view.bottom)return;
+      const image=img.getBoundingClientRect(),edge=Math.min(Math.max(entry.width,entry.height),Math.ceil(Math.max(image.width,image.height)*devicePixelRatio/256)*256);
+      if(edge>640)requests.push({...entry,edge});
+    });
+    void previews.request(requests);
+  },100);
+}
 const selects:Record<string,SelectBox>={};
 function select(key:string,options:Option[],value:string,change:(value:string)=>void){return selects[key]=new SelectBox(key,options,value,change);}
 const media=matchMedia('(prefers-color-scheme: dark)');let theme='system';
@@ -80,7 +105,7 @@ function choose(index=-1){if(busy)return;replaceIndex=index;fileInput.multiple=p
 fileInput.onchange=()=>void importFiles([...fileInput.files??[]],replaceIndex);
 directoryInput.onchange=()=>void importFiles([...directoryInput.files??[]]);
 $('import').onclick=()=>choose();$('empty').onclick=()=>choose();$('folder').onclick=()=>{if(!busy){directoryInput.value='';directoryInput.click();}};
-function release(entry:Entry){URL.revokeObjectURL(entry.thumbnail);}
+function release(entry:Entry){URL.revokeObjectURL(entry.thumbnail);previews.prune([...entries.filter(e=>e!==entry),...(source&&source!==entry?[source]:[])].map(e=>e.file));}
 async function importFiles(files:File[],index=-1){
   if(busy||!files.length)return;
   files=files.filter(file=>/\.(png|jpe?g|webp|bmp)$/i.test(file.name)||file.type.startsWith('image/'));
@@ -146,14 +171,14 @@ function renderBoard(){
       if(entry){
         const pos=placement(entry.width,entry.height,grid.cellWidth,grid.cellHeight,imageMode());
         if(compose.mode==='original'){const under=document.createElement('div');under.className='checker';Object.assign(under.style,{left:`${pos.x}px`,top:`${pos.y}px`,width:`${pos.width}px`,height:`${pos.height}px`});cell.append(under);}
-        const img=document.createElement('img');img.src=entry.thumbnail;img.alt=entry.file.name;img.draggable=false;Object.assign(img.style,{left:`${pos.x}px`,top:`${pos.y}px`,width:`${pos.width}px`,height:`${pos.height}px`});cell.append(img);cell.draggable=true;wireDrag(cell,i);
+        const img=document.createElement('img');img.src=previews.get(entry.file)?.url??entry.thumbnail;img.dataset.preview=String(i);img.alt=entry.file.name;img.draggable=false;Object.assign(img.style,{left:`${pos.x}px`,top:`${pos.y}px`,width:`${pos.width}px`,height:`${pos.height}px`});cell.append(img);cell.draggable=true;wireDrag(cell,i);
         const button=document.createElement('button');button.className='replace';button.textContent='替换';button.setAttribute('aria-label',`替换第 ${i+1} 张图片`);button.onclick=()=>choose(i);cell.append(button);
       }else{const hint=document.createElement('span');hint.className='cell-empty';hint.textContent='空格';cell.append(hint);}
       const badge=document.createElement('span');badge.className='badge';badge.textContent=String(i+1).padStart(2,'0');cell.append(badge);cell.ondblclick=()=>choose(i);wireDrop(cell,i);board.append(cell);
     }
   }else if(source){
     board.style.width=`${source.width}px`;board.style.height=`${source.height}px`;board.style.background='white';
-    const img=document.createElement('img');img.src=source.thumbnail;img.alt=source.file.name;img.className='split-image';img.draggable=false;board.append(img);
+    const img=document.createElement('img');img.src=previews.get(source.file)?.url??source.thumbnail;img.dataset.preview='source';img.alt=source.file.name;img.className='split-image';img.draggable=false;board.append(img);
     const svg=document.createElementNS('http://www.w3.org/2000/svg','svg');svg.classList.add('split-svg');svg.setAttribute('viewBox',`0 0 ${source.width} ${source.height}`);svg.innerHTML=split.xs.slice(1,-1).map((x,i)=>cutLine('x',i+1,x,source!.height)).join('')+split.ys.slice(1,-1).map((y,i)=>cutLine('y',i+1,y,source!.width)).join('');
     try{if(split.inset>0)for(const area of regions(split.xs,split.ys,split.inset)){const rect=document.createElementNS(svg.namespaceURI,'rect');for(const [key,value] of Object.entries(area))rect.setAttribute(key,String(value));rect.setAttribute('class','inset-box');svg.append(rect);}}catch{}
     board.append(svg);
@@ -164,12 +189,16 @@ function cutLine(axis:string,index:number,position:number,length:number){const c
 function contentSize():Size{return page==='compose'&&grid?grid:source??{width:1,height:1};}
 function fitScale(){const size=contentSize();return Math.max(.00001,Math.min((viewport.clientWidth-54)/size.width,(viewport.clientHeight-54)/size.height));}
 function transformBoard(){
-  if(board.hidden)return;scale=fitScale()*zoom;board.style.transform=`translate(-50%,-50%) translate(${-panX}px,${-panY}px) scale(${scale})`;board.style.setProperty('--scale',String(scale));
+  if(board.hidden)return;scale=fitScale()*zoom;const size=contentSize(),view=viewport.getBoundingClientRect();
+  let x=(viewport.clientWidth-size.width*scale)/2-panX,y=(viewport.clientHeight-size.height*scale)/2-panY;
+  if(Math.abs(scale*devicePixelRatio-1)<0.00001){x=Math.round((view.left+viewport.clientLeft+x)*devicePixelRatio)/devicePixelRatio-view.left-viewport.clientLeft;y=Math.round((view.top+viewport.clientTop+y)*devicePixelRatio)/devicePixelRatio-view.top-viewport.clientTop;}
+  board.style.transform=`translate(${x}px,${y}px) scale(${scale})`;board.style.setProperty('--scale',String(scale));
   // Use image-space stroke widths: CSS-transform hit testing otherwise selects the wrong line on tiny images.
   board.querySelectorAll<SVGElement>('.cut-hit').forEach(line=>line.style.strokeWidth=String(18/scale));
   board.querySelectorAll<SVGElement>('.cut-line').forEach(line=>line.style.strokeWidth=String((line.classList.contains('selected')?3:2)/scale));
   board.querySelectorAll<SVGElement>('.inset-box').forEach(rect=>rect.style.strokeWidth=String(1/scale));
   $('zoom').textContent=`${Math.round(scale*devicePixelRatio*100)}%`;
+  schedulePreviews();
 }
 function fit(){zoom=1;panX=panY=0;transformBoard();}
 $('fit').onclick=fit;$('pixel').onclick=()=>{if(board.hidden)return;zoom=1/(fitScale()*devicePixelRatio);panX=panY=0;transformBoard();};new ResizeObserver(()=>transformBoard()).observe(viewport);
@@ -227,7 +256,7 @@ function updateLinePosition(){const [axis,index]=selects.line.value.split(':');$
 $('apply-line').onclick=()=>{if(!source||!selects.line.value)return;const [axis,indexText]=selects.line.value.split(':'),index=Number(indexText),array=axis==='x'?split.xs:split.ys,value=Number($<HTMLInputElement>('line-position').value);const min=array[index-1]+2*split.inset+1,max=array[index+1]-2*split.inset-1;if(!Number.isInteger(value)||value<min||value>max){void prompt('坐标超出范围',`此分割线可设为 ${min}–${max} 的整数像素坐标。`);return;}array[index]=value;refresh();};
 $('reset-cuts').onclick=()=>{if(!source)return;try{split.xs=equalCuts(source.width,split.columns);split.ys=equalCuts(source.height,split.rows);refresh();status('已恢复均匀等分');}catch(error){void prompt('无法等分',(error as Error).message);}};
 $('clear').onclick=async()=>{if(busy||!(page==='compose'?entries.length:source))return;if(await prompt('清空图片','清空已导入的图片？原始文件不会被删除。',true)){if(page==='compose'){entries.forEach(release);entries=[];renderThumbnails();}else{release(source!);source=null;}refresh();fit();status('已清空图片');}};
-$('privacy').onclick=()=>void prompt('图片只在你的设备上处理','选择的图片仅在当前浏览器内读取、拼接和拆分，不发送到服务器。\n\nGitHub Pages 负责提供网页程序；本工具不接入账号、图片上传接口或统计脚本。\n\n关闭或刷新网页后，图片和布局不会保存。预览使用缩略图，导出重新读取源图片。');
+$('privacy').onclick=()=>void prompt('图片只在你的设备上处理','选择的图片仅在当前浏览器内读取、拼接和拆分，不发送到服务器。\n\nGitHub Pages 负责提供网页程序；本工具不接入账号、图片上传接口或统计脚本。\n\n关闭或刷新网页后，图片和布局不会保存。放大时按需加载高清预览；导出直接读取源图片。');
 function download(blob:Blob,name:string){const url=URL.createObjectURL(blob),anchor=document.createElement('a');anchor.href=url;anchor.download=name;document.body.append(anchor);anchor.click();anchor.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);}
 interface Writable {write(data:Blob):Promise<void>;close():Promise<void>}
 interface Folder {getDirectoryHandle(name:string,options:{create:boolean}):Promise<Folder>;getFileHandle(name:string,options:{create:boolean}):Promise<{createWritable():Promise<Writable>}>}
@@ -238,7 +267,7 @@ $('export').onclick=async()=>{
     setBusy(true);
     if(page==='split'&&selects.save.value==='folder')folder=await (window as unknown as {showDirectoryPicker(options:{mode:string}):Promise<Folder>}).showDirectoryPicker({mode:'readwrite'});
     setBusy(true);status(page==='compose'?'正在从原图生成宫格…':'正在从原图拆分图片…');$<HTMLProgressElement>('progress').value=0;
-    const result=await job(page==='compose'?{kind:'compose',files:entries.map(e=>e.file),sizes:entries.map(e=>({width:e.width,height:e.height})),grid:grid!,mode:imageMode(),background:compose.background,gapColor:compose.gapColor,format:compose.format}:{kind:'split',file:source!.file,xs:[...split.xs],ys:[...split.ys],inset:split.inset,archive:!folder});
+    const result=await job(page==='compose'?{kind:'compose',files:entries.map(e=>e.file),grid:grid!,mode:imageMode(),background:compose.background,gapColor:compose.gapColor,format:compose.format}:{kind:'split',file:source!.file,xs:[...split.xs],ys:[...split.ys],inset:split.inset,archive:!folder});
     if(cancelled)return;
     if(folder&&result.files){const name=`ImageGrid_${new Date().toISOString().replace(/[:.]/g,'-')}_${crypto.randomUUID().slice(0,6)}`;const output=await folder.getDirectoryHandle(name,{create:true});let saved=0;for(const entry of result.files){if(cancelled)break;const handle=await output.getFileHandle(entry.name,{create:true}),stream=await handle.createWritable();await stream.write(entry.blob);await stream.close();saved++;}status(`${cancelled?'已取消；':''}已保存 ${saved} 张图片至所选文件夹 / ${name}`);}
     else if(result.blob){download(result.blob,result.name!);status(`已生成 ${result.name} · ${(result.blob.size/1048576).toFixed(2)} MB，请查看浏览器下载`);}

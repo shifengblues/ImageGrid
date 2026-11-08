@@ -4,13 +4,11 @@ namespace StoryboardGrid.Core;
 
 public static class ImageService
 {
-    public const long MaxWorkingBytes = 768L * 1024 * 1024;
     public static void Guard(int w, int h, long extra = 0)
     {
-        long bytes = checked((long)w * h * 4 + extra);
-        long available = GC.GetGCMemoryInfo().TotalAvailableMemoryBytes;
-        if (w <= 0 || h <= 0 || w > 65535 || h > 65535 || bytes > Math.Min(MaxWorkingBytes, available / 3))
-            throw new ArgumentException($"预计工作像素缓冲约 {bytes/1048576d:0} MB，超过当前安全上限 {Math.Min(MaxWorkingBytes,available/3)/1048576d:0} MB（边长最多 65535px）。请使用更小的图像/统一尺寸，或内存更充足的设备；程序不会自动降低输出分辨率。");
+        if (w <= 0 || h <= 0 || (long)w * 4 > int.MaxValue || extra < 0)
+            throw new ArgumentException("图像尺寸无效或超过图像缓冲可表示的范围。");
+        _ = checked((long)w * h * 4 + extra);
     }
     public static Picture Inspect(string path)
     {

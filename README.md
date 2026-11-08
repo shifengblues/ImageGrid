@@ -2,7 +2,7 @@
 
 **图片拼接与宫格拆分工具，提供网页版与 Windows EXE。**
 
-**[打开网页版 →](https://shifengblues.github.io/ImageGrid/)** · **[下载 Windows 版 →](https://github.com/shifengblues/ImageGrid/releases/tag/v1.0.8)**
+**[打开网页版 →](https://shifengblues.github.io/ImageGrid/)** · **[下载 Windows 版 →](https://github.com/shifengblues/ImageGrid/releases/latest)**
 
 把多张图片排成一张整齐的宫格，或者把一张宫格图拆成多张独立图片。拖入图片、调整布局、预览效果，再导出保存。
 
@@ -16,7 +16,9 @@ Mac、Windows 用户都可以通过浏览器打开 [Image Grid Web](https://shif
 
 支持文件夹写入的浏览器可以把拆分结果保存到用户选定的文件夹；其他浏览器下载 ZIP 后解压即可。文件夹读取和写入都需要用户主动选择授权。
 
-网页版按预计工作缓冲设置 512 MB 安全范围，单边最多 16384px；实际能力还受浏览器和设备限制。超限会提示调整参数，不会自动降低画质。常见 8 位 PNG 在原像素 PNG 导出与拆分时保留解码像素；其他输入的解码、颜色和 JPG 编码可能因浏览器而异。高位深会转换为 8 位，不保留专业色彩管理和原始元数据。详见 [网页版验证记录](docs/WEB-VALIDATION.md)。
+网页版 1.0.1 和 Windows 1.0.9 已取消软件自定的固定内存与边长配额，实际能力受设备、浏览器及图像格式限制；不承诺无限大小，也不会自动降低画质。已在测试机器上验证 25 张 3840×2160 图片拼成 5×5，并输出 19212×10812 PNG/JPG。详见 [大图与高清预览验证](docs/LARGE-GRID-1.0.9.md)。
+
+网页版放大时按可见区域加载高清预览，4K 图片在 100% 查看时加载至原图尺寸并对齐屏幕像素，高清缓存按需回收。常见 8 位 PNG 在原像素 PNG 导出与拆分时保留解码像素；其他输入的解码、颜色和 JPG 编码可能因浏览器而异。高位深会转换为 8 位，不保留专业色彩管理和原始元数据。旧版验证记录见 [网页版验证记录](docs/WEB-VALIDATION.md)。
 
 网页版源码位于 `web/`。开发需要 Node.js 24 或更新的兼容版本：
 

@@ -86,7 +86,7 @@ internal static class ReleaseCheck
             ((Button)window.FindName("SplitTab")).RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
             if(window.State.Columns!=2||window.State.Rows!=2||window.State.Xs[1]!=63||window.State.Ys[1]!=41)throw new Exception("Actual page switching lost split layout or manual cuts.");
             ColorPickerChecks.Run(directory);
-            if(((TextBlock)window.FindName("VersionLabel")).Text!="v1.0.8"||((TextBlock)window.FindName("BrandLabel")).Text!="Image Grid"||window.Title!="Image Grid")throw new Exception("Product name/version was not updated.");
+            if(((TextBlock)window.FindName("VersionLabel")).Text!="v1.0.9"||((TextBlock)window.FindName("BrandLabel")).Text!="Image Grid"||window.Title!="Image Grid")throw new Exception("Product name/version was not updated.");
             var root=(FrameworkElement)window.Content;root.Measure(new Size(1080,720));root.Arrange(new Rect(0,0,1080,720));root.UpdateLayout();
             var themeBox=(ComboBox)window.FindName("ThemeCombo");var version=(TextBlock)window.FindName("VersionLabel");
             if(themeBox.TranslatePoint(new Point(),root).Y<root.ActualHeight*0.7||version.TranslatePoint(new Point(),root).Y<themeBox.TranslatePoint(new Point(),root).Y+themeBox.ActualHeight)throw new Exception("Appearance selector is not above the bottom-left version label.");

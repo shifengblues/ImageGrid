@@ -7,7 +7,7 @@
     <StackPanel DockPanel.Dock="Top"><Image x:Name="BrandLogo" Source="Assets/logo.png" Width="42" Height="42" HorizontalAlignment="Left" Margin="7,0,0,13" RenderOptions.BitmapScalingMode="HighQuality"/><TextBlock x:Name="BrandLabel" Text="Image Grid" FontWeight="SemiBold" FontSize="18" Margin="10,0,0,0"/><TextBlock Text="图片工作台" Foreground="{DynamicResource FaintText}" FontSize="10" Margin="10,5,0,38"/>
     <Button x:Name="ComposeTab" Content="▦   宫格合成" Click="ShowCompose" Background="{DynamicResource AccentSoft}" Foreground="{DynamicResource AccentText}" BorderThickness="0" Margin="0,0,0,10" Padding="12,13"/>
     <Button x:Name="SplitTab" Content="⊞   宫格拆分" Click="ShowSplit" BorderThickness="0" Margin="0,0,0,10" Padding="12,13"/></StackPanel>
-    <StackPanel x:Name="SidebarFooter" VerticalAlignment="Bottom"><TextBlock Text="外观" Foreground="{DynamicResource FaintText}" FontSize="11" Margin="10,24,0,8"/><ComboBox x:Name="ThemeCombo" SelectionChanged="ThemeChanged" Margin="0"><ComboBoxItem Content="浅色"/><ComboBoxItem Content="深色"/><ComboBoxItem Content="跟随系统"/></ComboBox><TextBlock x:Name="VersionLabel" Text="v1.0.8" FontSize="10" Foreground="{DynamicResource FaintText}" Margin="10,16,0,0"/></StackPanel>
+    <StackPanel x:Name="SidebarFooter" VerticalAlignment="Bottom"><TextBlock Text="外观" Foreground="{DynamicResource FaintText}" FontSize="11" Margin="10,24,0,8"/><ComboBox x:Name="ThemeCombo" SelectionChanged="ThemeChanged" Margin="0"><ComboBoxItem Content="浅色"/><ComboBoxItem Content="深色"/><ComboBoxItem Content="跟随系统"/></ComboBox><TextBlock x:Name="VersionLabel" Text="v1.0.9" FontSize="10" Foreground="{DynamicResource FaintText}" Margin="10,16,0,0"/></StackPanel>
    </DockPanel>
   </Border>
   <Grid Grid.Column="1" Margin="24,25,20,16">

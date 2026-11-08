@@ -4,6 +4,8 @@ using System.Runtime.InteropServices;
 using System.IO;
 
 if(args.Contains("--color-math")){ColorMathTests.Run();return;}
+if(args.Contains("--large-grid-policy")){ImageService.Guard(19212,10812,19212L*10812*4);Console.WriteLine("PASS 25 UHD images are not blocked by a fixed memory budget");return;}
+if(args.Length==3&&args[0]=="--uhd-grid"){LargeImageTests.GridUhd(args[1],args[2]);return;}
 ColorMathTests.Run();
 
 if(args.Length==3 && args[0]=="--large-input") {try{LargeImageTests.Run(args[1],args[2]);}catch(Exception ex){Console.Error.WriteLine(ex);Environment.ExitCode=1;}return;}
@@ -69,7 +71,7 @@ foreach(var format in new[]{SKEncodedImageFormat.Jpeg,SKEncodedImageFormat.Webp,
     if(format==SKEncodedImageFormat.Bmp)continue;
     string path=Path.Combine(root,"format."+format.ToString().ToLowerInvariant());Write(bitmap,path,format);using var decoded=ImageService.Decode(path);Check(decoded.Width==41&&decoded.Height==27,"decode "+format);
 }
-try{ImageService.Guard(100000,100000);throw new Exception("unsafe size accepted");}catch(ArgumentException){Console.WriteLine("PASS memory and dimensions guard");}
+try{ImageService.Guard(0,100000);throw new Exception("invalid size accepted");}catch(ArgumentException){Console.WriteLine("PASS invalid image dimensions rejected without fixed memory budget");}
 string canceled=Path.Combine(root,"cancel.png");if(File.Exists(canceled))File.Delete(canceled);
 using(var cancel=new CancellationTokenSource()){cancel.Cancel();try{ImageService.Compose(real,layout,true,false,SKColors.White,SKColors.White,canceled,null,cancel.Token);throw new Exception("cancel ignored");}catch(OperationCanceledException){Check(!File.Exists(canceled),"canceled export leaves no output");}}
 try{ImageService.Split(ImageService.Inspect(clean),[0,1920,3840],[0,1080,2160],0,splitDir,null,default);throw new Exception("conflict overwritten");}catch(IOException){Check(File.Exists(splitFiles[0]),"existing split files preserved");}

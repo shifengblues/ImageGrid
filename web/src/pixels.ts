@@ -38,5 +38,5 @@ export function rgb(hex:string):[number,number,number,number]{
 }
 export function flatBackground(pixels:Pixels,hex:string){
   const bg=rgb(hex);
-  for(let i=0;i<pixels.data.length;i+=4){const a=pixels.data[i+3];for(let c=0;c<3;c++)pixels.data[i+c]=Math.round((pixels.data[i+c]*a+bg[c]*(255-a))/255);pixels.data[i+3]=255;}
+  for(let i=0;i<pixels.data.length;i+=4){const a=pixels.data[i+3];if(a===255)continue;for(let c=0;c<3;c++)pixels.data[i+c]=Math.round((pixels.data[i+c]*a+bg[c]*(255-a))/255);pixels.data[i+3]=255;}
 }
