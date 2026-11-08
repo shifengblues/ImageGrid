@@ -12,13 +12,14 @@ export function pngPixels(bytes:ArrayBuffer):Pixels {
     return {width:png.width,height:png.height,data:rgba};
   }
   const data=new Uint8Array(png.width*png.height*4),max=2**png.depth-1;
+  const gray=png.channels<3,transparency=png.transparency;
   for(let y=0;y<png.height;y++)for(let x=0;x<png.width;x++){
-    const i=y*png.width+x;
-    const raw=png.depth<8?[(png.data[y*Math.ceil(png.width*png.depth/8)+Math.floor(x*png.depth/8)]>>(8-png.depth-x*png.depth%8))&max]:Array.from(png.data.subarray(i*png.channels,(i+1)*png.channels));
-    const values=raw.map(v=>Math.round(v*255/max));
-    const gray=png.channels<3;
-    const alpha=png.channels===2?values[1]:png.channels===4?values[3]:png.transparency&&raw.every((v,k)=>v===png.transparency![k])?0:255;
-    data.set([values[0],gray?values[0]:values[1],gray?values[0]:values[2],alpha],i*4);
+    const i=y*png.width+x,offset=i*png.channels;
+    const red=png.depth<8?(png.data[y*Math.ceil(png.width*png.depth/8)+Math.floor(x*png.depth/8)]>>(8-png.depth-x*png.depth%8))&max:png.data[offset];
+    const green=gray?red:png.data[offset+1],blue=gray?red:png.data[offset+2];
+    const transparent=transparency&&red===transparency[0]&&(gray||green===transparency[1]&&blue===transparency[2]);
+    const alpha=png.channels===2?png.data[offset+1]:png.channels===4?png.data[offset+3]:transparent?0:max;
+    data[i*4]=Math.round(red*255/max);data[i*4+1]=Math.round(green*255/max);data[i*4+2]=Math.round(blue*255/max);data[i*4+3]=Math.round(alpha*255/max);
   }
   return {width:png.width,height:png.height,data};
 }

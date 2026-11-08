@@ -1,0 +1,25 @@
+function hsvToRgb(h:number,s:number,v:number){
+  const f=(n:number)=>{const k=(n+h/60)%6;return Math.round(255*v*(1-s*Math.max(0,Math.min(k,4-k,1))));};return [f(5),f(3),f(1)];
+}
+function rgbToHsv(r:number,g:number,b:number){r/=255;g/=255;b/=255;const max=Math.max(r,g,b),min=Math.min(r,g,b),delta=max-min;let h=0;if(delta){if(max===r)h=60*((g-b)/delta%6);else if(max===g)h=60*((b-r)/delta+2);else h=60*((r-g)/delta+4);}return [(h+360)%360,max===0?0:delta/max,max];}
+const hex=(values:number[])=>'#'+values.map(v=>v.toString(16).padStart(2,'0')).join('').toUpperCase();
+export function pickColor(initial:string):Promise<string|null>{
+  if(!/^#[0-9a-f]{6}$/i.test(initial))initial='#FFFFFF';
+  const original=initial,dialog=document.createElement('dialog');dialog.className='color-dialog';dialog.setAttribute('aria-label','选择颜色');
+  dialog.innerHTML=`<form method="dialog"><button class="dialog-x" value="cancel" aria-label="关闭选色">×</button><span class="color-eyebrow">COLOR STUDIO</span><h2>选择颜色</h2><div class="color-layout"><div><div class="sv-panel" role="slider" tabindex="0" aria-label="饱和度与明度"><span class="color-cursor"></span></div><input class="hue-slider" aria-label="色相" type="range" min="0" max="359" value="0"></div><div class="color-fields"><div class="color-compare"><button class="original-color" type="button" title="恢复原色">原色</button><span class="new-color">新颜色</span></div><label>HEX<input class="hex-input" maxlength="7" spellcheck="false"></label><div class="rgb-fields">${['R','G','B'].map(key=>`<label>${key}<input class="rgb-input" aria-label="${key}" type="number" min="0" max="255" step="1"></label>`).join('')}</div><p class="color-error" role="status"></p></div></div><div class="dialog-actions"><button value="cancel">取消</button><button class="primary color-confirm" value="ok">应用颜色</button></div></form>`;
+  document.body.append(dialog);
+  const panel=dialog.querySelector<HTMLElement>('.sv-panel')!,cursor=dialog.querySelector<HTMLElement>('.color-cursor')!,hue=dialog.querySelector<HTMLInputElement>('.hue-slider')!,hexInput=dialog.querySelector<HTMLInputElement>('.hex-input')!,inputs=[...dialog.querySelectorAll<HTMLInputElement>('.rgb-input')],confirm=dialog.querySelector<HTMLButtonElement>('.color-confirm')!,error=dialog.querySelector<HTMLElement>('.color-error')!;
+  const originalValues=initial.slice(1).match(/../g)!.map(v=>parseInt(v,16));let [h,s,v]=rgbToHsv(...originalValues as [number,number,number]),current=initial;
+  const originalButton=dialog.querySelector<HTMLElement>('.original-color')!,next=dialog.querySelector<HTMLElement>('.new-color')!;
+  function preview(){const values=hsvToRgb(h,s,v);current=hex(values);panel.style.backgroundColor=`hsl(${h} 100% 50%)`;cursor.style.left=`${s*100}%`;cursor.style.top=`${(1-v)*100}%`;panel.setAttribute('aria-valuetext',`饱和度 ${Math.round(s*100)}%，明度 ${Math.round(v*100)}%`);hue.value=String(Math.round(h));next.style.background=current;next.style.color=v>.65?'#24332d':'#fff';error.textContent='';confirm.disabled=false;}
+  function sync(){preview();hexInput.value=current;const values=hsvToRgb(h,s,v);inputs.forEach((input,i)=>input.value=String(values[i]));}
+  originalButton.style.background=initial;originalButton.style.color=originalValues.reduce((a,b)=>a+b,0)>420?'#24332d':'#fff';originalButton.onclick=()=>{[h,s,v]=rgbToHsv(...originalValues as [number,number,number]);sync();};
+  function position(e:PointerEvent){const rect=panel.getBoundingClientRect();s=Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width));v=1-Math.max(0,Math.min(1,(e.clientY-rect.top)/rect.height));sync();}
+  panel.onpointerdown=e=>{panel.focus();panel.setPointerCapture(e.pointerId);position(e);};panel.onpointermove=e=>{if(panel.hasPointerCapture(e.pointerId))position(e);};panel.onpointerup=e=>{if(panel.hasPointerCapture(e.pointerId))panel.releasePointerCapture(e.pointerId);};
+  panel.onkeydown=e=>{const step=e.shiftKey?.05:.01;if(e.key==='ArrowLeft')s=Math.max(0,s-step);else if(e.key==='ArrowRight')s=Math.min(1,s+step);else if(e.key==='ArrowUp')v=Math.min(1,v+step);else if(e.key==='ArrowDown')v=Math.max(0,v-step);else return;e.preventDefault();sync();};
+  hue.oninput=()=>{h=Number(hue.value);sync();};
+  hexInput.oninput=()=>{if(!/^#[0-9a-f]{6}$/i.test(hexInput.value)){error.textContent='请输入完整的 #RRGGBB 颜色';confirm.disabled=true;return;}const values=hexInput.value.slice(1).match(/../g)!.map(n=>parseInt(n,16));[h,s,v]=rgbToHsv(...values as [number,number,number]);preview();inputs.forEach((input,i)=>input.value=String(values[i]));};
+  for(const input of inputs)input.oninput=()=>{const values=inputs.map(i=>i.value===''?NaN:Number(i.value));if(values.some(n=>!Number.isInteger(n)||n<0||n>255)){error.textContent='RGB 须为 0–255 的整数';confirm.disabled=true;return;}[h,s,v]=rgbToHsv(...values as [number,number,number]);preview();hexInput.value=current;};
+  sync();dialog.showModal();hexInput.focus();hexInput.select();
+  return new Promise(resolve=>dialog.addEventListener('close',()=>{const value=dialog.returnValue==='ok'&&!confirm.disabled?current:null;dialog.remove();resolve(value??(dialog.returnValue==='ok'?original:null));},{once:true}));
+}
