@@ -1,0 +1,61 @@
+<Window x:Class="StoryboardGrid.MainWindow" xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation" xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:StoryboardGrid" Title="Image Grid" Icon="Assets/app.ico" Width="1360" Height="880" MinWidth="1080" MinHeight="720" Background="{DynamicResource AppBackground}" WindowStartupLocation="CenterScreen" AllowDrop="True" Drop="WindowDrop" Closing="WindowClosing">
+ <Grid TextElement.Foreground="{DynamicResource Text}" Background="{DynamicResource AppBackground}">
+  <Grid.RowDefinitions><RowDefinition/><RowDefinition Height="48"/></Grid.RowDefinitions>
+  <Grid.ColumnDefinitions><ColumnDefinition Width="172"/><ColumnDefinition Width="*"/><ColumnDefinition Width="284"/></Grid.ColumnDefinitions>
+  <Border Grid.RowSpan="2" Background="{DynamicResource Card}" BorderBrush="{DynamicResource Border}" BorderThickness="0,0,1,0">
+   <DockPanel Margin="14,28,14,16">
+    <StackPanel DockPanel.Dock="Top"><Image x:Name="BrandLogo" Source="Assets/logo.png" Width="42" Height="42" HorizontalAlignment="Left" Margin="7,0,0,13" RenderOptions.BitmapScalingMode="HighQuality"/><TextBlock x:Name="BrandLabel" Text="Image Grid" FontWeight="SemiBold" FontSize="18" Margin="10,0,0,0"/><TextBlock Text="图片工作台" Foreground="{DynamicResource FaintText}" FontSize="10" Margin="10,5,0,38"/>
+    <Button x:Name="ComposeTab" Content="▦   宫格合成" Click="ShowCompose" Background="{DynamicResource AccentSoft}" Foreground="{DynamicResource AccentText}" BorderThickness="0" Margin="0,0,0,10" Padding="12,13"/>
+    <Button x:Name="SplitTab" Content="⊞   宫格拆分" Click="ShowSplit" BorderThickness="0" Margin="0,0,0,10" Padding="12,13"/></StackPanel>
+    <StackPanel x:Name="SidebarFooter" VerticalAlignment="Bottom"><TextBlock Text="外观" Foreground="{DynamicResource FaintText}" FontSize="11" Margin="10,24,0,8"/><ComboBox x:Name="ThemeCombo" SelectionChanged="ThemeChanged" Margin="0"><ComboBoxItem Content="浅色"/><ComboBoxItem Content="深色"/><ComboBoxItem Content="跟随系统"/></ComboBox><TextBlock x:Name="VersionLabel" Text="v1.0.8" FontSize="10" Foreground="{DynamicResource FaintText}" Margin="10,16,0,0"/></StackPanel>
+   </DockPanel>
+  </Border>
+  <Grid Grid.Column="1" Margin="24,25,20,16">
+   <Grid.RowDefinitions><RowDefinition Height="72"/><RowDefinition Height="54"/><RowDefinition Height="*"/><RowDefinition Height="36"/><RowDefinition Height="124"/></Grid.RowDefinitions>
+   <StackPanel><TextBlock x:Name="PageTitle" Text="宫格合成" FontSize="26" FontWeight="SemiBold"/></StackPanel>
+   <DockPanel Grid.Row="1" VerticalAlignment="Top"><StackPanel Orientation="Horizontal"><Button Content="＋ 导入图片" Click="ImportClick" Style="{StaticResource Primary}" IsEnabled="{Binding Idle}"/><Button Content="适应窗口" Click="FitClick"/><Button Content="100%" Click="PixelViewClick" ToolTip="一个图像像素对应一个屏幕像素；超出窗口可拖动查看"/><Button x:Name="ClearButton" Content="清空" Click="ClearClick" IsEnabled="{Binding Idle}"/><TextBlock x:Name="ZoomLabel" Text="—" Foreground="{DynamicResource MutedText}" FontSize="10" VerticalAlignment="Center" Margin="5,0"/></StackPanel><TextBlock Text="滚轮缩放 · 右键 / 中键平移" Foreground="{DynamicResource FaintText}" FontSize="10" HorizontalAlignment="Right" VerticalAlignment="Center"/></DockPanel>
+   <Border Grid.Row="2" CornerRadius="12" BorderBrush="{DynamicResource Border}" BorderThickness="1" ClipToBounds="True"><local:GridCanvas x:Name="Canvas"/></Border>
+   <TextBlock Grid.Row="3" Text="{Binding Summary}" FontSize="10" Foreground="{DynamicResource MutedText}" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip="{Binding Summary}"/>
+   <Border Grid.Row="4" Background="{DynamicResource Card}" CornerRadius="10" BorderBrush="{DynamicResource Border}" BorderThickness="1">
+    <Grid><ScrollViewer x:Name="ThumbScroll" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled"><StackPanel x:Name="Thumbnails" Orientation="Horizontal" Margin="8"/></ScrollViewer><TextBlock x:Name="SplitHelp" Visibility="Collapsed" Text="拖动绿色虚线，调整宫格分割线。&#x0a;线条按原图整数像素定位；白色内框表示内缩后保留的区域。&#x0a;右侧可选择分界线并输入精确坐标。" Foreground="{DynamicResource MutedText}" LineHeight="25" Margin="20,18"/></Grid>
+   </Border>
+  </Grid>
+  <Border Grid.Column="2" Background="{DynamicResource Card}" BorderBrush="{DynamicResource Border}" BorderThickness="1,0,0,0">
+   <DockPanel x:Name="ParametersPanel" Margin="22,24,22,18"><DockPanel.Resources><Style TargetType="TextBox" BasedOn="{StaticResource {x:Type TextBox}}"><Setter Property="Padding" Value="8,6"/><Setter Property="Margin" Value="0,3,0,5"/></Style></DockPanel.Resources>
+    <StackPanel DockPanel.Dock="Bottom" Margin="0,16,0,0"><StackPanel x:Name="FormatOptions"><TextBlock Text="合成导出格式" Style="{StaticResource Note}"/><ComboBox SelectedIndex="{Binding ExportFormat}" IsEnabled="{Binding Idle}"><ComboBoxItem Content="PNG · 无损"/><ComboBoxItem Content="JPG · 最高质量 100"/></ComboBox><TextBlock Text="JPG不支持透明通道；透明区域按画布背景色合成。" Style="{StaticResource Note}" Margin="0,0,0,8"/></StackPanel><TextBlock x:Name="ExportInfo" Text="按原始尺寸导出 · 本地保存" Style="{StaticResource Note}" Margin="0,0,0,10"/><Button x:Name="ExportButton" Content="导出宫格图  ↗" Style="{StaticResource Primary}" Click="ExportClick" IsEnabled="{Binding Idle}" Margin="0"/><Button x:Name="OpenFolderButton" Content="打开输出文件夹" Click="OpenFolder" Margin="0,9,0,0" Visibility="Collapsed"/></StackPanel>
+    <ScrollViewer x:Name="SettingsScroll" Padding="0,0,6,0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled"><StackPanel x:Name="Settings" IsEnabled="{Binding Idle}">
+     <TextBlock Text="布局设置" FontSize="16" FontWeight="SemiBold" Margin="0,0,0,14"/>
+     <UniformGrid Rows="1"><Button Content="2×2" Tag="2" Click="Preset" Padding="5,8"/><Button Content="3×3" Tag="3" Click="Preset" Padding="5,8"/><Button Content="4×4" Tag="4" Click="Preset" Padding="5,8"/><Button Content="5×5" Tag="5" Click="Preset" Padding="5,8" Margin="0"/></UniformGrid>
+     <Grid Margin="0,10,0,0"><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="12"/><ColumnDefinition/></Grid.ColumnDefinitions><StackPanel><TextBlock Text="列数" Style="{StaticResource Note}"/><TextBox Text="{Binding Columns, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"/></StackPanel><StackPanel Grid.Column="2"><TextBlock Text="行数" Style="{StaticResource Note}"/><TextBox Text="{Binding Rows, UpdateSourceTrigger=PropertyChanged, ValidatesOnExceptions=True}"/></StackPanel></Grid>
+     <StackPanel x:Name="ComposeSettings">
+      <TextBlock Text="单格画幅" Style="{StaticResource Label}"/>
+      <ComboBox x:Name="RatioCombo" SelectedIndex="0" SelectionChanged="RatioChanged"><ComboBoxItem Content="16:9  /  横向图片"/><ComboBoxItem Content="9:16  /  竖向图片"/><ComboBoxItem Content="1:1  /  正方形"/><ComboBoxItem Content="4:3"/><ComboBoxItem Content="3:2"/><ComboBoxItem Content="自定义比例"/></ComboBox>
+      <StackPanel x:Name="CustomRatio" Orientation="Horizontal" Visibility="Collapsed"><TextBox Width="90" Text="{Binding RatioW, UpdateSourceTrigger=PropertyChanged}"/><TextBlock Text=" : " VerticalAlignment="Center"/><TextBox Width="90" Text="{Binding RatioH, UpdateSourceTrigger=PropertyChanged}"/></StackPanel>
+      <TextBlock Text="图像处理模式" Style="{StaticResource Label}"/>
+      <ComboBox SelectedIndex="{Binding Mode}"><ComboBoxItem Content="原像素 · 不缩放 / 不裁切"/><ComboBoxItem Content="统一尺寸 · Fit / Fill"/><ComboBoxItem Content="自动填满 · 居中裁切"/></ComboBox>
+      <StackPanel x:Name="SizeSettings" Visibility="Collapsed">
+       <ComboBox SelectedIndex="0" SelectionChanged="SizePreset"><ComboBoxItem Content="1920 × 1080"/><ComboBoxItem Content="1280 × 720"/><ComboBoxItem Content="1080 × 1920"/><ComboBoxItem Content="自定义尺寸"/></ComboBox>
+       <StackPanel Orientation="Horizontal"><TextBox Width="94" Text="{Binding TargetW, UpdateSourceTrigger=PropertyChanged}"/><TextBlock Text=" × " VerticalAlignment="Center"/><TextBox Width="94" Text="{Binding TargetH, UpdateSourceTrigger=PropertyChanged}"/></StackPanel>
+       <ComboBox SelectedIndex="{Binding Fit}"><ComboBoxItem Content="Fit · 完整显示，允许留白"/><ComboBoxItem Content="Fill · 填满，居中裁切"/></ComboBox>
+      </StackPanel>
+      <TextBlock x:Name="ModeNote" Text="保留解码后的原始像素尺寸。不同尺寸图片居中排列，自动计算统一单格。" Style="{StaticResource Note}"/>
+      <TextBlock Text="内部间距 / px" Style="{StaticResource Label}"/>
+      <Grid><Grid.ColumnDefinitions><ColumnDefinition/><ColumnDefinition Width="64"/></Grid.ColumnDefinitions><Slider Minimum="0" Maximum="100" TickFrequency="1" IsSnapToTickEnabled="True" Value="{Binding Gap, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" VerticalAlignment="Center" Margin="0,0,12,0" ToolTip="按导出图片像素计算；大图缩小预览时，细间距可能不明显。"/><TextBox Grid.Column="1" Text="{Binding Gap, UpdateSourceTrigger=PropertyChanged}"/></Grid>
+      <TextBlock Text="间距颜色" Style="{StaticResource Label}"/><DockPanel><Button DockPanel.Dock="Right" Content="选色" Tag="gap" Click="PickColor" Padding="8,6" Margin="6,3,0,7"/><TextBox Text="{Binding GapColor, UpdateSourceTrigger=PropertyChanged}"/></DockPanel>
+      <TextBlock Text="画布 / 空格背景" Style="{StaticResource Label}"/><DockPanel><Button DockPanel.Dock="Right" Content="选色" Tag="background" Click="PickColor" Padding="8,6" Margin="6,3,0,7"/><TextBox Text="{Binding Background, UpdateSourceTrigger=PropertyChanged}"/></DockPanel>
+      <TextBlock Text="无外围边框。序号和辅助线仅用于预览，不会写入图片。" Style="{StaticResource Note}" Margin="0,10,0,0"/>
+     </StackPanel>
+     <StackPanel x:Name="SplitSettings" Visibility="Collapsed">
+      <TextBlock Text="切分区域内缩 / 每边 px" Style="{StaticResource Label}"/><TextBox Text="{Binding Inset, UpdateSourceTrigger=PropertyChanged}"/>
+      <TextBlock Text="内缩会主动裁掉每个区域的四边，用于去除原图中的分隔边框。" Style="{StaticResource Note}"/>
+      <TextBlock Text="精确调整分界线" Style="{StaticResource Label}"/>
+      <ComboBox x:Name="LineCombo" SelectionChanged="LineSelected"/><TextBox x:Name="LinePosition" ToolTip="原图像素坐标"/><Button Content="应用像素坐标" Click="ApplyLine" Margin="0,0,0,12"/>
+      <Button Content="恢复均匀等分" Click="ResetCuts" Margin="0,0,0,15"/>
+      <TextBlock Text="绿色虚线对应实际切分坐标。切分按从左到右、从上到下导出 PNG，不缩放图片。" Style="{StaticResource Note}"/>
+     </StackPanel>
+    </StackPanel></ScrollViewer>
+   </DockPanel>
+  </Border>
+  <Border Grid.Row="1" Grid.Column="1" Grid.ColumnSpan="2" BorderBrush="{DynamicResource Border}" BorderThickness="0,1,0,0" Background="{DynamicResource Card}"><DockPanel Margin="22,0"><Button x:Name="CancelButton" DockPanel.Dock="Right" Content="取消处理" Click="CancelClick" Visibility="Collapsed" Padding="12,4"/><ProgressBar x:Name="Progress" DockPanel.Dock="Right" Width="130" Height="4" Margin="12,0" Minimum="0" Maximum="1" Visibility="Collapsed"/><TextBlock Text="{Binding Status}" FontSize="11" VerticalAlignment="Center" TextTrimming="CharacterEllipsis" ToolTip="{Binding Status}"/></DockPanel></Border>
+ </Grid>
+</Window>
