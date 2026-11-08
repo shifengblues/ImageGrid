@@ -31,3 +31,9 @@
 浏览器运行环境为当前 Windows 机器上的 Chrome 和 Playwright WebKit，后者不等于 macOS 实机 Safari。未覆盖所有设备内存、系统色彩管理及浏览器版本。文件选择结果由浏览器测试提供；真实系统文件夹写入授权未自动化操作，不声称已经验证用户的任意磁盘权限组合。
 
 网页预览使用最长边 640px 缩略图，放大可能模糊；导出读取源图。仅支持首帧和 8 位输出，暂不保存工作区，也没有离线安装缓存。预计像素缓冲上限不等同于浏览器总进程内存保证。
+
+## 公开站点验收
+
+GitHub Actions 的构建、测试、依赖检查和 Pages 部署全部成功，构建记录：https://github.com/shifengblues/ImageGrid/actions/runs/42470862550 。
+
+公开网址：https://shifengblues.github.io/ImageGrid/ 。已在公开站点重新执行 Chrome 主流程，实际下载合成 PNG/JPG 与拆分 ZIP，16 项检查通过，未发现图片上传或运行时错误。
