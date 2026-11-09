@@ -6,6 +6,20 @@
 
 **[打开网页版，直接使用 →](https://shifengblues.github.io/ImageGrid/)** · **[下载 Windows 版 →](https://github.com/shifengblues/ImageGrid/releases/latest)**
 
+## 功能演示
+
+### 图片拼接 / 支持替换
+
+把多张图片拼成一张宫格，也可以单独替换其中一张图片。
+
+![图片拼接与单张替换演示](docs/demos/image-grid-merge.gif)
+
+### 图片快捷分割
+
+把一张图片按宫格拆成多张，方便单独使用或重新排版。
+
+![图片快捷分割演示](docs/demos/image-grid-split.gif)
+
 ## 能做什么
 
 | 功能 | 可以怎样使用 |
