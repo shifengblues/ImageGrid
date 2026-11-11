@@ -20,6 +20,12 @@
 
 ![图片快捷分割演示](docs/demos/image-grid-split.gif)
 
+### 分镜审阅
+
+把分镜按镜头顺序拼成多宫格，在一张图里连续查看画面与前后衔接，比逐行翻阅表格更直观，也方便对照讨论。
+
+![分镜审阅应用场景演示](docs/demos/image-grid-storyboard-review.gif)
+
 ## 能做什么
 
 | 功能 | 可以怎样使用 |
